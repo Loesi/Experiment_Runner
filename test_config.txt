@@ -1,0 +1,9 @@
+CONT, dummy, C1
+CONT, dummy, C2
+CONT, dummy, C3
+
+SENS1, dummy, S1, 1
+SENS1, dummy, S2, 2
+SENS2, dummy, S3, 5
+SENS2, dummy, S4, 2
+SENS, dummy, S5, 1

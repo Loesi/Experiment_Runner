@@ -1,0 +1,25 @@
+# all text after "#" and empty lines are ignored
+# below is the configuration of the different devices
+# content in brackets is only needed for the controller 
+# CONT/SENS, bronkhorst, name, port, channel, DDE(, FluidSetInd)
+# SENS, thermocouple, name, channel --> this can be 0,1,2,3 currently
+
+CONT, bronkhorst, H2_sp, COM6, 1, 206, 1
+SENS1, bronkhorst, H2_flow, COM6, 1, 205
+SENS, bronkhorst, H2_On, COM6, 2, 205
+SENS, bronkhorst, H2_Out, COM6, 3, 205
+
+CONT, bronkhorst, CO2_sp, COM5, 1, 206, 2
+SENS1, bronkhorst, CO2_flow, COM5, 1, 205
+SENS, bronkhorst, CO2_On, COM5, 2, 205
+SENS, bronkhorst, CO2_Out, COM5, 3, 205
+
+CONT, bronkhorst, Ar_sp, COM4, 1, 206, 3
+SENS1, bronkhorst, Ar_flow, COM4, 1, 205
+SENS, bronkhorst, Ar_On, COM4, 2, 205
+SENS, bronkhorst, Ar_Out, COM4, 3, 205
+
+SENS2, thermocouple, TEMP1, 0
+SENS2, thermocouple, TEMP2, 1
+SENS2, thermocouple, TEMP3, 2
+SENS2, thermocouple, TEMP4, 3

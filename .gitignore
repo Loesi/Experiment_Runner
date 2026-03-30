@@ -1,0 +1,9 @@
+# ignore everything
+*
+
+# whitelist this
+!.gitignore
+!Experiment_Runner.py
+!instruments.py
+!config.txt
+!test_config.txt
