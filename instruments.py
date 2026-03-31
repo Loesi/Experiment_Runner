@@ -174,7 +174,6 @@ class ThermocoupleArray:
                     temperature_raw_bytearray = bytearray(data[start:end])
                     temperatures.append(struct.unpack('<f', temperature_raw_bytearray)[0])
                 self._cached_data = temperatures
-                self._handle_reconnection()
                 return
             else:
                 print("Insufficient data received. Resetting connection...")
