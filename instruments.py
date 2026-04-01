@@ -174,6 +174,7 @@ class ThermocoupleArray:
                     temperature_raw_bytearray = bytearray(data[start:end])
                     temperatures.append(struct.unpack('<f', temperature_raw_bytearray)[0])
                 self._cached_data = temperatures
+                self._last_read_time = time.time()
                 return
             else:
                 print("Insufficient data received. Resetting connection...")
@@ -191,10 +192,8 @@ class ThermocoupleArray:
             print(f"channel_id: {channel_id}")
             raise ValueError(f"channel_id {channel_id} is out of the channel range. Only {self._channel_No} accessible.")
         
-        current_time = time.time()
-        if current_time - self._last_read_time > self._readout_cutoff_s:
+        if time.time() - self._last_read_time > self._readout_cutoff_s:
             self._low_level_bulk_read()
-            self._last_read_time = current_time
         
         return self._cached_data[channel_id]
 
