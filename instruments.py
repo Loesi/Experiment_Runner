@@ -140,7 +140,7 @@ class ThermocoupleArray:
 
         self._last_read_time = 0.0
         self._readout_cutoff_s = readout_cutoff_s
-        self._cached_data: list[Any] = []
+        self._cached_data: list[Any] = [np.nan] * self._channel_No
 
         self._configure_Array()
     
@@ -165,8 +165,8 @@ class ThermocoupleArray:
         ENDPOINT_OUT = 0x01
 
         temperatures = []
-        self.dev.write(ENDPOINT_OUT, [0x19, 0x01, 0x05, 0x00], timeout = 500)
         try:
+            self.dev.write(ENDPOINT_OUT, [0x19, 0x01, 0x05, 0x00], timeout = 500)
             data = self.dev.read(ENDPOINT_IN, 33, timeout = 500)
             
             if len(data) >= 32:
@@ -180,7 +180,7 @@ class ThermocoupleArray:
                 self._handle_reconnection()
                 return 
                 
-        except (usb.core.USBError, Exception) as e:
+        except (usb.core.USBError, Exception, AttributeError) as e:
             print(f"USB Error: {e}. Attempting recovery...")
             self._handle_reconnection()
             return 
@@ -190,9 +190,6 @@ class ThermocoupleArray:
         if channel_id >= self._channel_No:
             print(f"channel_id: {channel_id}")
             raise ValueError(f"channel_id {channel_id} is out of the channel range. Only {self._channel_No} accessible.")
-        
-        if isinstance(self.dev, type(None)):
-            return None
         
         current_time = time.time()
         if current_time - self._last_read_time > self._readout_cutoff_s:
