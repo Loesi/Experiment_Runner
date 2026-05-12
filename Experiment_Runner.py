@@ -8,7 +8,7 @@ Author: JLöseke
 import argparse, csv, io, math, os, playsound, queue, signal, sys, threading, time
 from matplotlib import pyplot, lines
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple, Dict, List
 
 from instruments import *
 
@@ -61,10 +61,10 @@ class Experiment_Controller:
         self.print_header()
         self.save: bool = save
 
-        self.controllers: dict[str, CONTROLLER] = {}
-        self.sensors: dict[str, SENSOR] = {}
-        self.alarms: list[ALARM] = []
-        self.sens_display: dict[str: int] = {}
+        self.controllers: Dict[str, CONTROLLER|ErrorInstrument] = {}
+        self.sensors: Dict[str, SENSOR|ErrorInstrument] = {}
+        self.alarms: List[ALARM] = []
+        self.sens_display: dict[str, int] = {}
         for conf in self._read_config(conf_name):
             self._init_instrument(*conf)
         if not all(a.test(self.sensors) for a in self.alarms):
@@ -91,14 +91,14 @@ class Experiment_Controller:
             """
         )
 
-    def _read_config(self, conf: os.PathLike|None) -> list[list[str]]:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
+    def _read_config(self, conf: os.PathLike|None) -> List[List[str]]:
+        script_dir = Path(__file__).resolve().parent
         if isinstance(conf, type(None)):
-            return read_file(os.path.join(script_dir, 'config.txt'))
+            return read_file(script_dir / 'config.txt')
         else:
-            return read_file(os.path.join(script_dir, conf))
+            return read_file(script_dir / conf)
 
-    def _init_instrument(self, instrument_type: str, *conf: list[str]) -> None:
+    def _init_instrument(self, instrument_type: str, *conf: str) -> None:
         match instrument_type[:4]:
             case "CONT":
                 name, CONT = init_CONTROLLER(*conf)
@@ -173,10 +173,11 @@ class Experiment_Controller:
 
         if procedure_file[-4:] != ".txt":
             procedure_file += ".txt"
-        if os.path.exists(os.path.join(Path.home(), PROCEDURE_DIR_NAME, procedure_file)):
-            self.setpoints = read_file(os.path.join(Path.home(), PROCEDURE_DIR_NAME, procedure_file))
-        elif os.path.exists(procedure_file):
-            self.setpoints = read_file(os.path.join(Path.home(), PROCEDURE_DIR_NAME, procedure_file))
+        proc_file = Path.home() / PROCEDURE_DIR_NAME / procedure_file
+        if proc_file.exists():
+            self.setpoints = read_file(proc_file)
+        if Path(procedure_file).exists():
+            self.setpoints = read_file(Path(procedure_file))
         else:
             print(f"No procedure file named '{procedure_file}' found. The file has to exist in {os.path.join(Path.home(), PROCEDURE_DIR_NAME, procedure_file)} or the relative path has to be provided.")
             return
@@ -191,14 +192,13 @@ class Experiment_Controller:
         self.alarm_lock = threading.Lock()
         self.alarm_active = False
         self.active_alarms = []
-        self.timestamps: list[float] = []
-        self.readouts: dict[str: list[float]] = {s: [] for s in self.sensors}
+        self.timestamps: List[float] = []
+        self.readouts: Dict[str, List[float]] = {s: [] for s in self.sensors}
 
         pyplot.ion()
         ax_number = max(self.sens_display.values())+1
-        plot_lines: dict[str: lines.Line2D] = {}
         self.fig, self.axes = pyplot.subplots(ax_number, 1, sharex="all")
-        plot_lines: dict[str: lines.Line2D] = {}
+        plot_lines: Dict[str, lines.Line2D] = {}
 
         for sens_name, ax_idx in self.sens_display.items():
             plot_lines[sens_name] = self.axes[ax_idx].plot([], [], label=sens_name)[0]
@@ -253,9 +253,10 @@ class Experiment_Controller:
         """continuously readouts the sensors"""
         while self.running:
             cur_time = time.time()
-            current_readings = {'time': cur_time-self.start}
+            current_readings: Dict[str, np.number | None] = {'time': np.float128(cur_time-self.start)}
 
             for name, sensor in self.sensors.items():
+                assert isinstance(sensor, SENSOR)
                 current_readings[name] = sensor.read()
             self.data_queue.put(current_readings)
 
@@ -287,7 +288,7 @@ class Experiment_Controller:
     def _write_loop(self, f:io.TextIOWrapper | None = None, writer: csv.DictWriter | None = None):
         doWrite = not (isinstance(writer, type(None)) or isinstance(f, type(None)))
         while self.running:
-            data: dict[str: float] | None = self.data_queue.get()
+            data: Dict[str, float] | None = self.data_queue.get()
             if data is None:
                 # exit condition
                 self.alarm_active = False
@@ -328,8 +329,9 @@ class Experiment_Controller:
         while self.running and setpoint_idx < len(self.setpoints):
             sp = self.setpoints[setpoint_idx]
 
-            for i, cont in enumerate(self.controllers):
-                self.controllers[cont].set(float(sp[1+i]))
+            for i, (name, cont) in enumerate(self.controllers.items()):
+                assert isinstance(cont, CONTROLLER)
+                cont.set(np.float64(sp[1+i]))
 
             if sp[0].upper() == "C":
                 c_names = self.controllers.keys()
@@ -354,7 +356,7 @@ class Experiment_Controller:
         self.running = False
         print("\n--- Control Sequence Complete ---")
 
-    def _plotting_thread(self, plot_lines: dict[str: lines.Line2D], update_interval=1):
+    def _plotting_thread(self, plot_lines: Dict[str, lines.Line2D], update_interval=1):
         """Thread for continuously displaying the data in a plt plot"""
         last_data_count = 0            
         cur_time = 0.1
@@ -419,6 +421,7 @@ class Experiment_Controller:
             print("run aborted")
             self.running = False
         for _, cont in self.controllers.items():
+            assert isinstance(cont, CONTROLLER)
             cont.set_default()
 
 def parse_args():
@@ -446,7 +449,7 @@ if __name__ == "__main__":
     
     if args.test:
         print("--- Running Test Pathway ---")
-        exp = Experiment_Controller(conf_name="test_config.txt", save= not args.nosave)
+        exp = Experiment_Controller(conf_name=Path("test_config.txt"), save= not args.nosave)
         exp.run("test","test_exp.txt")
         exit(0)
         

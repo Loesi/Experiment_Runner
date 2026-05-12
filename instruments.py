@@ -39,20 +39,20 @@ class CONTROLLER:
     def set_default(self):
         self.set(self._default)
 
-    def calibrate(self, sensor_call: Callable[[None], np.number]):
-        """calibrates the conversion between the request value and the controllers set value"""
-        ys = np.linspace(0, self._max_set_value, 100)
-        xs = []
-        for i in ys:
-            time.sleep(0.5)
-            self._set_fc(i)
-            time.sleep(0.5)
-            ys.append(sensor_call)
-        xs = np.array(xs)
+    # def calibrate(self, sensor_call: Callable[[None], np.number]):
+    #     """calibrates the conversion between the request value and the controllers set value"""
+    #     ys = np.linspace(0, self._max_set_value, 100)
+    #     xs = []
+    #     for i in ys:
+    #         time.sleep(0.5)
+    #         self._set_fc(i)
+    #         time.sleep(0.5)
+    #         ys.append(sensor_call)
+    #     xs = np.array(xs)
 
-        model = lmfit.models.LinearModel()
-        res = model.fit(data = ys, x = xs)
-        self._calc_set_value = lambda x: res.eval(x)
+    #     model = lmfit.models.LinearModel()
+    #     res = model.fit(data = ys, x = xs)
+    #     self._calc_set_value = lambda x: res.eval(x)
     
 
 class SENSOR:
@@ -111,7 +111,7 @@ class ALARM:
         right = self.right if isinstance(self.right, np.number) else SENSs[self.right]
         return self._check(left, right)
     
-    def test(self, SENSs: dict[str, SENSOR]) -> bool:
+    def test(self, SENSs: dict[str, SENSOR | ErrorInstrument]) -> bool:
         for v in [self.left, self.right]:
             if not isinstance(v, float) and v not in SENSs.keys():
                 return False
@@ -219,8 +219,9 @@ class LinearInterpolator:
         if isinstance(self.start_time, type(None)):
             self.start_time = time.time()
             self.end_time = self.start_time + self.duration
-        assert self.start_time is float
-        assert self.end_time is float
+
+        assert isinstance(self.start_time, float)
+        assert isinstance(self.end_time, float)
 
         current_time = time.time()
         if current_time > self.end_time:
@@ -265,7 +266,7 @@ def init_CONTROLLER(device_type: str, *conf) -> tuple[str, CONTROLLER | ErrorIns
                 set_fc=set_fc,
                 read_fc=read_fc,
                 init_calc_set_value_fc= lambda x: x,
-                default=np.int8(0)
+                default=np.int8(0),
             )
             
         case "dummy":
@@ -273,7 +274,7 @@ def init_CONTROLLER(device_type: str, *conf) -> tuple[str, CONTROLLER | ErrorIns
             return name, CONTROLLER(
                 name = name,
                 set_fc = lambda x: print(f"Controller {name:>4s} set to {x}."),
-                read_fc = lambda: None,
+                read_fc = lambda: np.int8(0),
                 init_calc_set_value_fc = lambda x: x,
                 default = np.int8(0)
             )
@@ -318,6 +319,7 @@ def init_SENSOR(device_type: str, *conf) -> tuple[str, SENSOR | ErrorInstrument]
             except:
                 return name, ErrorInstrument(name=name)
             
+            assert thermocoupleArray is not None
             return name, SENSOR(
                 name = name,
                 read_fc = lambda: thermocoupleArray.readParameter(int(channel))
