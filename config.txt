@@ -2,6 +2,7 @@
 # below is the configuration of the different devices
 # content in brackets is only needed for the controller 
 # CONT/SENS, bronkhorst, name, port, channel, DDE(, FluidSetInd)
+# CONT/SENS, bronkhorst_legacy, name, port, channel, address, DDE(, FluidSetInd)
 # SENS, thermocouple, name, channel --> this can be 0,1,2,3 currently
 
 CONT, bronkhorst, H2_sp, COM6, 1, 206, 1
@@ -18,6 +19,9 @@ CONT, bronkhorst, Ar_sp, COM4, 1, 206, 3
 SENS1, bronkhorst, Ar_flow, COM4, 1, 205
 SENS, bronkhorst, Ar_On, COM4, 2, 205
 SENS, bronkhorst, Ar_Out, COM4, 3, 205
+
+CONT, bronkhorst_legacy, Ar_flush, COM7, 1, 6, 206
+SENS, bronkhorst_legacy, Ar_flush, COM7, 1, 6, 205
 
 SENS2, thermocouple, TEMP1, 0
 SENS2, thermocouple, TEMP2, 1
