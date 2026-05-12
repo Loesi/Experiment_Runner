@@ -11,7 +11,7 @@ class ErrorInstrument:
 
 
 class CONTROLLER:
-    def __init__(self, name, set_fc: Callable[[np.number]], read_fc: Callable[[], np.number | None], init_calc_set_value_fc: Callable[[np.number], np.number], default: np.number):
+    def __init__(self, name, set_fc: Callable[[np.number], None], read_fc: Callable[[], np.number | None], init_calc_set_value_fc: Callable[[np.number], np.number], default: np.number):
         """Controller object that is used to controll a specific parameter with the experiment runner"""
         self.name = name
         self._set_fc = set_fc
@@ -165,7 +165,7 @@ class ThermocoupleArray:
         self._cached_data = [np.nan] * self._channel_No
         self._configure_Array()
         try:
-            assert self.dev is usb.core.Device
+            assert isinstance(self.dev, usb.core.Device)
             self.dev.read(self.ENDPOINT_IN, 33, timeout = 5)
         except:
             pass
@@ -174,7 +174,7 @@ class ThermocoupleArray:
         """Reads out the Temperatur Values from the Thermocouples and stores them in the cache"""
         temperatures = []
         try:
-            assert self.dev is usb.core.Device
+            assert isinstance(self.dev, usb.core.Device)
             self.dev.write(self.ENDPOINT_OUT, [0x19, 0x01, 0x05, 0x00], timeout = 500)
             data = self.dev.read(self.ENDPOINT_IN, 33, timeout = 500)
             
